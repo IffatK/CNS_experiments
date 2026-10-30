@@ -1,0 +1,13 @@
+{
+  "name": "cns-interactive-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive Computer Network Security Lab for VIT INFT",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
