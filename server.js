@@ -4,7 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const root = __dirname;
-const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
+const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.mp4': 'video/mp4' };
 const send = (res, status, data) => { res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(data)); };
 const toHex = b => Buffer.from(b).toString('hex');
 const fromHex = s => { if (!/^(?:[0-9a-f]{2})+$/i.test(s)) throw Error('Ciphertext must be even-length hexadecimal.'); return Buffer.from(s, 'hex'); };
@@ -85,7 +85,24 @@ const server = http.createServer((req,res) => {
   const pathname = decodeURIComponent((req.url || '/').split('?')[0]);
   const target = path.resolve(root, pathname === '/' ? 'index.html' : `.${pathname}`);
   if (!target.startsWith(root + path.sep) && target !== path.join(root,'index.html')) { res.writeHead(403); return res.end(); }
-  fs.readFile(target,(err,data)=>{ if(err){res.writeHead(404);return res.end('Not found');} res.writeHead(200,{'content-type':mime[path.extname(target)]||'application/octet-stream','cache-control':'no-store'});res.end(data); });
+  fs.stat(target,(err,stat)=>{
+    if(err||!stat.isFile()){res.writeHead(404);return res.end('Not found');}
+    const type=mime[path.extname(target)]||'application/octet-stream';
+    const range=req.headers.range;
+    if(range){
+      const match=/^bytes=(\d*)-(\d*)$/.exec(range);
+      if(!match){res.writeHead(416,{'content-range':`bytes */${stat.size}`});return res.end();}
+      let start=match[1]?Number(match[1]):null,end=match[2]?Number(match[2]):null;
+      if(start===null){const suffix=end; if(!suffix){res.writeHead(416,{'content-range':`bytes */${stat.size}`});return res.end();} start=Math.max(0,stat.size-suffix);end=stat.size-1;}
+      else if(end===null)end=stat.size-1;
+      if(start>=stat.size||start>end){res.writeHead(416,{'content-range':`bytes */${stat.size}`});return res.end();}
+      end=Math.min(end,stat.size-1);
+      res.writeHead(206,{'content-type':type,'accept-ranges':'bytes','content-range':`bytes ${start}-${end}/${stat.size}`,'content-length':end-start+1,'cache-control':'no-store'});
+      fs.createReadStream(target,{start,end}).pipe(res);return;
+    }
+    res.writeHead(200,{'content-type':type,'accept-ranges':'bytes','content-length':stat.size,'cache-control':'no-store'});
+    fs.createReadStream(target).pipe(res);
+  });
 });
 const requestedPort = Number(process.env.PORT || 4173);
 if (require.main === module) {
