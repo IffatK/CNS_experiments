@@ -113,4 +113,6 @@ small,.tag,.panel-kicker,.eyebrow,.section-meta,.completion,.difficulty,.nav-hea
 .video-card-heading h2{margin:3px 0 0}
 .video-file{color:var(--muted);font:11px 'DM Mono',monospace}
 .kali-video-card video{display:block;width:100%;aspect-ratio:16/9;background:#050806;border:1px solid var(--line);border-radius:10px}
+.video-error{margin:12px 0 0;padding:10px 12px;border:1px solid color-mix(in srgb,var(--red) 35%,var(--line));border-radius:8px;color:var(--red);font-size:12px}
+.video-error[hidden]{display:none}
 @media(max-width:700px){.kali-video-grid{grid-template-columns:1fr;gap:14px}.kali-video-card{padding:16px}}
